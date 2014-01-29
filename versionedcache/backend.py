@@ -1,6 +1,7 @@
 import time
 from collections import namedtuple
 
+import django
 from django.core.cache.backends import memcached, base
 from django.utils.encoding import smart_unicode, smart_str
 
@@ -106,5 +107,16 @@ class VersionHerdMixin(object):
     def decr(self, key, delta=1, **kwargs):
         return base.BaseCache.decr(self, key, delta, **kwargs)
 
-class CacheClass(VersionHerdMixin, memcached.CacheClass):
+major = django.VERSION[0] 
+minor = django.VERSION[1] 
+if major <= 1 and minor <= 5:
+    MemcachedCacheClass = memcached.CacheClass
+else:
+    # memcached.CacheClass was removed in Django 1.6, it was split into two
+    # implementations: MemcachedCache and PyLibMCCache, lets use the first one.
+    # See deprecation warning in Django 1.5 code:
+    # https://github.com/django/django/blob/stable/1.5.x/django/core/cache/backends/memcached.py#L145
+    MemcachedCacheClass = memcached.MemcachedCache
+
+class CacheClass(VersionHerdMixin, MemcachedCacheClass):
     pass
